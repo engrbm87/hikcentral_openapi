@@ -44,6 +44,9 @@ class ResourceEndpoint(StrEnum):
     ORG_ADD = f"{BASE_URL}/org/single/add"
     ORG_UPDATE = f"{BASE_URL}/org/single/update"
     ORG_DELETE = f"{BASE_URL}/org/single/delete"
+    ACCESS_LEVELS = f"{BASE_URL}/privilege/group"
+    ACCESS_LEVELS_ASSIGN = f"{BASE_URL}/privilege/group/single/addPersons"
+    ACCESS_LEVELS_UNASSIGN = f"{BASE_URL}/privilege/group/single/deletePersons"
     PERSON_INFO = f"{BASE_URL}/person/personId/personInfo"
     PERSON_LIST = f"{BASE_URL}/person/advance/personList"
     PERSON_ADD = f"{BASE_URL}/person/single/add"
@@ -147,3 +150,35 @@ class Person(BaseModel):
             "email": self.email,
             "cards": [{"cardNo": card.card_no} for card in self.cards],
         }
+
+
+class TimeSchedule(BaseModel):
+    """Time schedule model."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    index_code: str = Field(..., alias="indexCode")
+    name: str = Field(..., alias="name")
+
+
+class AccessLevel(BaseModel):
+    """Access level model."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    access_level_id: str = Field(..., alias="privilegeGroupId")
+    access_level_name: str = Field(..., alias="privilegeGroupName")
+    description: str = Field(..., alias="description")
+    time_schedule: TimeSchedule | None = Field(None, alias="timeSchedule")
+
+    def access_level_request(self, persons: list[Person]) -> dict[str, Any]:
+        """Return dict for assigning/unassiging access level to a list of persons."""
+        person_ids = []
+        for person in persons:
+            if person.person_id:
+                person_ids.append({"id": person.person_id})
+
+        data_payload = {
+            "privilegeGroupId": self.access_level_id,
+            "type": 1,
+            "list": person_ids,
+        }
+        return data_payload

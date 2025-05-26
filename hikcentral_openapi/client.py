@@ -5,6 +5,7 @@ import hashlib
 import hmac
 from json import JSONDecodeError
 import logging
+from os import access
 from ssl import SSLError
 from typing import Any, cast
 
@@ -18,6 +19,7 @@ from .models import (
     ProductVersion,
     ResourceEndpoint,
     ResponseData,
+    AccessLevel,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -190,6 +192,46 @@ class Client:
         """Delete an organization."""
         await self._async_request(
             ResourceEndpoint.ORG_DELETE, data={"orgIndexCode": org_id}
+        )
+
+    async def get_access_level(self) -> list[AccessLevel]:
+        """Return list of access levels."""
+        access_levels: list[AccessLevel] = []
+        page_number = 1
+        while True:
+            resp_data = ResponseData.model_validate(
+                await self._async_request(
+                    ResourceEndpoint.ACCESS_LEVELS,
+                    return_list=True,
+                    page_number=page_number,
+                )
+            )
+            if resp_data.total == 0:
+                break
+            access_levels += [
+                AccessLevel.model_validate(level) for level in resp_data.result
+            ]
+            if len(access_levels) >= resp_data.total:
+                break
+            page_number += 1
+        return access_levels
+
+    async def assign_access_level(
+        self, access_level: AccessLevel, person: list[Person]
+    ) -> None:
+        """Assign persons to an access level."""
+        await self._async_request(
+            ResourceEndpoint.ACCESS_LEVELS_ASSIGN,
+            data=access_level.access_level_request(person),
+        )
+
+    async def unassign_access_level(
+        self, access_level: AccessLevel, person: list[Person]
+    ) -> None:
+        """Unassign persons from an access level."""
+        await self._async_request(
+            ResourceEndpoint.ACCESS_LEVELS_UNASSIGN,
+            data=access_level.access_level_request(person),
         )
 
     async def get_person(
