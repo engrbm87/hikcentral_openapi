@@ -170,16 +170,10 @@ class AccessLevel(BaseModel):
     description: str = Field(..., alias="description")
     time_schedule: TimeSchedule | None = Field(None, alias="timeSchedule")
 
-    def access_level_request(self, persons: list[Person]) -> dict[str, Any]:
+    def access_level_request(self, person_id: list[str]) -> dict[str, Any]:
         """Return dict for assigning/unassiging access level to a list of persons."""
-        person_ids = []
-        for person in persons:
-            if person.person_id:
-                person_ids.append({"id": person.person_id})
-
-        data_payload = {
+        return {
             "privilegeGroupId": self.access_level_id,
             "type": 1,
-            "list": person_ids,
+            "list": [{"id": id} for id in person_id],
         }
-        return data_payload

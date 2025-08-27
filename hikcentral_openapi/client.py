@@ -99,6 +99,8 @@ class Client:
         data = data or {}
         if return_list:
             data.update({"pageNo": page_number, "pageSize": 500})
+        if "/acs/" in endpoint:
+            data.update({"type": 1})
         try:
             response = await self.httpx_client.request(
                 "POST",
@@ -217,21 +219,21 @@ class Client:
         return access_levels
 
     async def assign_access_level(
-        self, access_level: AccessLevel, person: list[Person]
+        self, access_level: AccessLevel, person_id: list[str]
     ) -> None:
         """Assign persons to an access level."""
         await self._async_request(
             ResourceEndpoint.ACCESS_LEVELS_ASSIGN,
-            data=access_level.access_level_request(person),
+            data=access_level.access_level_request(person_id),
         )
 
     async def unassign_access_level(
-        self, access_level: AccessLevel, person: list[Person]
+        self, access_level: AccessLevel, person_id: list[str]
     ) -> None:
         """Unassign persons from an access level."""
         await self._async_request(
             ResourceEndpoint.ACCESS_LEVELS_UNASSIGN,
-            data=access_level.access_level_request(person),
+            data=access_level.access_level_request(person_id),
         )
 
     async def get_person(
