@@ -5,7 +5,6 @@ import hashlib
 import hmac
 from json import JSONDecodeError
 import logging
-from os import access
 from ssl import SSLError
 from typing import Any, cast
 
@@ -13,13 +12,13 @@ import httpx
 
 from .exceptions import ConnectError, RequestError, UnauthorizedError
 from .models import (
+    AccessLevel,
     APIResponse,
     Organization,
     Person,
     ProductVersion,
     ResourceEndpoint,
     ResponseData,
-    AccessLevel,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,9 +38,7 @@ class Client:
     ) -> None:
         """Initialize REST api client."""
         self.server_url = f"https://{host}:{port}"
-        self.httpx_client: httpx.AsyncClient = httpx_client or httpx.AsyncClient(
-            verify=False
-        )
+        self.httpx_client = httpx_client or httpx.AsyncClient(verify=False)
         self.user_secret = user_secret.encode("UTF-8")
         self.httpx_client.headers = httpx.Headers(
             {
@@ -67,16 +64,12 @@ class Client:
         Returns:
             The Base64 encoded HMAC-SHA256 signature (as a string), or None on error.
         """
-        string_to_sign_bytes = f"{self.headers_string}\n{url}".encode(
-            "UTF-8"
-        )  # Encode string to sign to bytes
+        string_to_sign_bytes = f"{self.headers_string}\n{url}".encode("UTF-8")
 
         hmac_obj = hmac.new(self.user_secret, string_to_sign_bytes, hashlib.sha256)
-        signature_bytes = hmac_obj.digest()  # Get the raw signature bytes
+        signature_bytes = hmac_obj.digest()
 
-        return base64.b64encode(signature_bytes).decode(
-            "UTF-8"
-        )  # Base64 encode and decode to string
+        return base64.b64encode(signature_bytes).decode("UTF-8")
 
     async def _async_request(
         self,
@@ -102,8 +95,7 @@ class Client:
         if "/acs/" in endpoint:
             data.update({"type": 1})
         try:
-            response = await self.httpx_client.request(
-                "POST",
+            response = await self.httpx_client.post(
                 f"{self.server_url}{endpoint}",
                 params=params,
                 json=data,
@@ -136,10 +128,6 @@ class Client:
                 except JSONDecodeError:
                     message = "Unknown error"
             raise RequestError(message)
-        # if response.status_code == httpx.codes.CREATED:
-        #     return {"location": response.headers.get("location")}
-        # if response.status_code == httpx.codes.NO_CONTENT:
-        #     return None
         result = cast(APIResponse, response.json())
         if result["code"] != "0":
             raise RequestError(result["msg"])
@@ -280,8 +268,7 @@ class Client:
     async def add_person(self, person: Person) -> str:
         """Add a new person."""
         return await self._async_request(
-            ResourceEndpoint.PERSON_ADD,
-            data=person.model_dump(by_alias=True, exclude_none=True),
+            ResourceEndpoint.PERSON_ADD, data=person.model_dump()
         )
 
     async def update_person(self, person: Person) -> None:

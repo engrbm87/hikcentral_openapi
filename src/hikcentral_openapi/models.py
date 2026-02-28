@@ -8,32 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import TypedDict
 
 
-class ResponseData(BaseModel):
-    """Response data model."""
-
-    model_config = ConfigDict(populate_by_name=True)
-    total: int
-    page_size: int | None = Field(None, alias="pageSize")
-    page_no: int | None = Field(None, alias="pageNo")
-    result: list[dict[str, Any]] = Field(default_factory=list, alias="list")
-
-
-class APIResponse(TypedDict):
-    """API response model."""
-
-    code: str
-    msg: str
-    data: Any
-
-
-class ProductVersion(BaseModel):
-    """Product version model."""
-
-    model_config = ConfigDict(populate_by_name=True)
-    produce_name: str = Field(..., alias="produceName")
-    soft_version: str = Field(..., alias="softVersion")
-
-
 class ResourceEndpoint(StrEnum):
     """Resource endpoints."""
 
@@ -56,13 +30,45 @@ class ResourceEndpoint(StrEnum):
     PERSON_DELETE = f"{RESOURCE_URL}/person/single/delete"
 
 
-class Organization(BaseModel):
+class APIResponse(TypedDict):
+    """API response model."""
+
+    code: str
+    msg: str
+    data: Any
+
+
+class OpenAIBaseModel(BaseModel):
+    """Base model for OpenAPI models."""
+
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
+
+    def model_dump(self, kwargs: Any) -> dict[str, Any]:
+        return super().model_dump(by_alias=True, exclude_none=True, **kwargs)
+
+
+class ResponseData(OpenAIBaseModel):
+    """Response data model."""
+
+    total: int
+    page_size: int | None = Field(None, alias="pageSize")
+    page_no: int | None = Field(None, alias="pageNo")
+    result: list[dict[str, Any]] = Field(alias="list")
+
+
+class ProductVersion(OpenAIBaseModel):
+    """Product version model."""
+
+    produce_name: str = Field(alias="produceName")
+    soft_version: str = Field(alias="softVersion")
+
+
+class Organization(OpenAIBaseModel):
     """Organization model."""
 
-    model_config = ConfigDict(populate_by_name=True)
-    org_id: str = Field(..., alias="orgIndexCode")
-    org_name: str = Field(..., alias="orgName")
-    parent_org_id: str = Field(..., alias="parentOrgIndexCode")
+    org_id: str = Field(alias="orgIndexCode")
+    org_name: str = Field(alias="orgName")
+    parent_org_id: str = Field(alias="parentOrgIndexCode")
 
     def update_dict(self) -> dict[str, Any]:
         """Organization update dict."""
@@ -73,7 +79,7 @@ class Organization(BaseModel):
         }
 
 
-class PersonFingerPrint(BaseModel):
+class PersonFingerPrint(OpenAIBaseModel):
     """Person fingerprint model."""
 
     finger_print_index_code: str | None = Field(None, alias="fingerPrintIndexCode")
@@ -82,31 +88,28 @@ class PersonFingerPrint(BaseModel):
     related_card_no: str | None = Field(None, alias="relatedCardNo")
 
 
-class PersonPhoto(TypedDict):
-    """Person photo dict."""
+class PersonPhoto(OpenAIBaseModel):
+    """Person photo model."""
 
-    picUri: str
+    pic_uri: str = Field(alias="picUri")
 
 
-class Card(BaseModel):
+class Card(OpenAIBaseModel):
     """Card model."""
 
-    model_config = ConfigDict(populate_by_name=True)
-    card_no: str = Field(..., alias="cardNo")
+    card_no: str = Field(alias="cardNo")
 
 
-class Face(BaseModel):
+class Face(OpenAIBaseModel):
     """Face model."""
 
-    model_config = ConfigDict(populate_by_name=True)
-    face_data: str = Field(..., alias="faceData")
+    face_data: str = Field(alias="faceData")
 
 
-class CustomField(BaseModel):
+class CustomField(OpenAIBaseModel):
     """Custom field model."""
 
-    model_config = ConfigDict(populate_by_name=True)
-    id: str | None = Field(None)
+    id: str | None = None
     custom_field_name: str | None = Field(None, alias="customFieldName")
     custom_field_type: int | None = Field(None, alias="customFieldType")
     custom_field_value: str | None = Field(None, alias="customFieldValue")
@@ -117,10 +120,9 @@ class CustomField(BaseModel):
     is_show: bool = Field(True, alias="isShow")
 
 
-class Person(BaseModel):
+class Person(OpenAIBaseModel):
     """Person model."""
 
-    model_config = ConfigDict(populate_by_name=True)
     person_id: str | None = Field(None, alias="personId")
     person_code: str | None = Field(None, alias="personCode")
     person_name: str | None = Field(None, alias="personName")
@@ -153,21 +155,19 @@ class Person(BaseModel):
         }
 
 
-class TimeSchedule(BaseModel):
+class TimeSchedule(OpenAIBaseModel):
     """Time schedule model."""
 
-    model_config = ConfigDict(populate_by_name=True)
-    index_code: str = Field(..., alias="indexCode")
-    name: str = Field(..., alias="name")
+    name: str
+    index_code: str = Field(alias="indexCode")
 
 
-class AccessLevel(BaseModel):
+class AccessLevel(OpenAIBaseModel):
     """Access level model."""
 
-    model_config = ConfigDict(populate_by_name=True)
-    access_level_id: str = Field(..., alias="privilegeGroupId")
-    access_level_name: str = Field(..., alias="privilegeGroupName")
-    description: str = Field(..., alias="description")
+    access_level_id: str = Field(alias="privilegeGroupId")
+    access_level_name: str = Field(alias="privilegeGroupName")
+    description: str = Field(alias="description")
     time_schedule: TimeSchedule | None = Field(None, alias="timeSchedule")
 
     def access_level_request(self, person_id: list[str]) -> dict[str, Any]:
