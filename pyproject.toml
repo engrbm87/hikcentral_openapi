@@ -1,6 +1,6 @@
 [project]
 name = "hikcentral-openapi"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python library for HikCentral Open API"
 authors = [{ name = "Rami Mousleh", email = "engrbm87@gmail.com" }]
 requires-python = ">=3.11"
