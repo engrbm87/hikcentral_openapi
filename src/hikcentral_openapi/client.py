@@ -79,15 +79,8 @@ class Client:
         params: dict[str, Any] | None = None,
         return_list: bool = False,
         page_number: int = 1,
-    ) -> Any:
+    ) -> dict[str, Any] | str:
         """Send a http request and return the response."""
-        # params = params or {}
-        # _LOGGER.debug(
-        #     "Sending POST request to endpoint: %s, data: %s, params: %s",
-        #     endpoint,
-        #     data,
-        #     params,
-        # )
         signature = self.generate_hmac_sha256_signature(endpoint)
         data = data or {}
         if return_list:
@@ -122,7 +115,7 @@ class Client:
                 message = "Service Unavailable"
             else:
                 try:
-                    message = cast(dict[str, Any], response.json()).get(
+                    message = cast(APIResponse, response.json()).get(
                         "msg", "Invalid operation"
                     )
                 except JSONDecodeError:
@@ -233,14 +226,10 @@ class Client:
     ) -> list[Person]:
         """Return list of persons based on search params."""
         if person_id:
-            return [
-                Person.model_validate(
-                    await self._async_request(
-                        ResourceEndpoint.PERSON_INFO,
-                        data={"personId": person_id},
-                    )
-                )
-            ]
+            response = await self._async_request(
+                ResourceEndpoint.PERSON_INFO, data={"personId": str(person_id)}
+            )
+            return [Person.model_validate(response)]
         persons: list[Person] = []
         page_number = 1
         data = {}
@@ -267,8 +256,11 @@ class Client:
 
     async def add_person(self, person: Person) -> str:
         """Add a new person."""
-        return await self._async_request(
-            ResourceEndpoint.PERSON_ADD, data=person.model_dump()
+        return cast(
+            str,
+            await self._async_request(
+                ResourceEndpoint.PERSON_ADD, data=person.model_dump()
+            ),
         )
 
     async def update_person(self, person: Person) -> None:

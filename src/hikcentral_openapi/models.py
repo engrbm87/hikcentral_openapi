@@ -35,7 +35,7 @@ class APIResponse(TypedDict):
 
     code: str
     msg: str
-    data: Any
+    data: dict[str, Any] | str
 
 
 class OpenAIBaseModel(BaseModel):
@@ -43,7 +43,7 @@ class OpenAIBaseModel(BaseModel):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
-    def model_dump(self, kwargs: Any) -> dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         return super().model_dump(by_alias=True, exclude_none=True, **kwargs)
 
 
